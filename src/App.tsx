@@ -1,21 +1,21 @@
+import { formatJsonRpcRequest } from "@json-rpc-tools/utils";
+import WalletConnect from "@walletconnect/client";
+import { IInternalEvent } from "@walletconnect/types";
+import QRCodeModal from "algorand-walletconnect-qrcode-modal";
+import algosdk from "algosdk";
 import * as React from "react";
 import styled from "styled-components";
-import WalletConnect from "@walletconnect/client";
-import QRCodeModal from "algorand-walletconnect-qrcode-modal";
-import { IInternalEvent } from "@walletconnect/types";
-import { formatJsonRpcRequest } from "@json-rpc-tools/utils";
-import algosdk from "algosdk";
+import AccountAssets from "./components/AccountAssets";
 import Button from "./components/Button";
 import Column from "./components/Column";
-import Wrapper from "./components/Wrapper";
-import Modal from "./components/Modal";
 import Header from "./components/Header";
 import Loader from "./components/Loader";
-import { fonts } from "./styles";
+import Modal from "./components/Modal";
+import Wrapper from "./components/Wrapper";
 import { apiGetAccountAssets, apiSubmitTransactions, ChainType } from "./helpers/api";
 import { IAssetData, IWalletTransaction, SignTxnParams } from "./helpers/types";
-import AccountAssets from "./components/AccountAssets";
 import { Scenario, scenarios, signTxnWithTestAccount } from "./scenarios";
+import { fonts } from "./styles";
 
 const SLayout = styled.div`
   position: relative;
@@ -232,6 +232,7 @@ class App extends React.Component<unknown, IAppState> {
 
     if (connector.connected) {
       const { accounts } = connector;
+      console.log(accounts);
       const address = accounts[0];
       this.setState({
         connected: true,
@@ -262,6 +263,7 @@ class App extends React.Component<unknown, IAppState> {
 
   public onConnect = async (payload: IInternalEvent) => {
     const { accounts } = payload.params[0];
+    console.log(accounts);
     const address = accounts[0];
     await this.setState({
       connected: true,
@@ -307,7 +309,6 @@ class App extends React.Component<unknown, IAppState> {
     if (!connector) {
       return;
     }
-
     try {
       const txnsToSign = await scenario(chain, address);
 
@@ -318,19 +319,27 @@ class App extends React.Component<unknown, IAppState> {
       this.setState({ pendingRequest: true });
 
       const flatTxns = txnsToSign.reduce((acc, val) => acc.concat(val), []);
+      console.log("flatTxns", flatTxns);
 
       const walletTxns: IWalletTransaction[] = flatTxns.map(
         ({ txn, signers, authAddr, message }) => ({
+          // operation.algo_transaction
           txn: Buffer.from(algosdk.encodeUnsignedTransaction(txn)).toString("base64"),
           signers, // TODO: put auth addr in signers array
           authAddr,
           message,
         }),
       );
+      walletTxns.forEach(walletTxn => {
+        console.log("walletTxn:", walletTxn.txn);
+        // signedOperation.algo_transaction = walletTxn.txn;
+      });
 
       // sign transaction
       const requestParams: SignTxnParams = [walletTxns];
+      console.log(requestParams);
       const request = formatJsonRpcRequest("algo_signTxn", requestParams);
+      console.log(request);
       const result: Array<string | null> = await connector.sendCustomRequest(request);
 
       console.log("Raw response:", result);
@@ -367,6 +376,7 @@ class App extends React.Component<unknown, IAppState> {
 
         const rawSignedTxn = Buffer.from(r, "base64");
         signedPartialTxns[group].push(new Uint8Array(rawSignedTxn));
+        console.log(signedPartialTxns);
       });
 
       const signedTxns: Uint8Array[][] = signedPartialTxns.map(
@@ -390,8 +400,12 @@ class App extends React.Component<unknown, IAppState> {
           if (rawSignedTxn == null) {
             return null;
           }
-
+          const signedEncoded = Buffer.from(rawSignedTxn).toString("base64");
           const signedTxn = algosdk.decodeSignedTransaction(rawSignedTxn);
+          // signedOperation.algo_transaction_id = i
+          console.log("signed encoded: ", signedEncoded);
+          // signedOperation.signed_algo_transaction = Buffer.from(rawSignedTxn).toString("base64")
+          console.log("signed tx:", signedTxn);
           const txn = (signedTxn.txn as unknown) as algosdk.Transaction;
           const txID = txn.txID();
           const unsignedTxID = txnsToSign[group][i].txn.txID();

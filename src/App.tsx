@@ -12,8 +12,13 @@ import Header from "./components/Header";
 import Loader from "./components/Loader";
 import Modal from "./components/Modal";
 import Wrapper from "./components/Wrapper";
-import { apiGetAccountAssets, apiSubmitTransactions, ChainType } from "./helpers/api";
-import { IAssetData, IWalletTransaction, SignTxnParams } from "./helpers/types";
+import {
+  apiGetAccountAssets,
+  apiGetTxnParams,
+  apiSubmitTransactions,
+  ChainType
+} from "./helpers/api";
+import { IAssetData, IOperation, IWalletTransaction, SignTxnParams } from "./helpers/types";
 import { Scenario, scenarios, signTxnWithTestAccount } from "./scenarios";
 import { fonts } from "./styles";
 
@@ -305,12 +310,72 @@ class App extends React.Component<unknown, IAppState> {
 
   public signTxnScenario = async (scenario: Scenario) => {
     const { connector, address, chain } = this.state;
-
+    console.log(scenario.name);
     if (!connector) {
       return;
     }
+
+    const account = {
+      address: "KMWDMTFGJKYMVVJ65WG3B3RPJAXUM7IFT5FAK5BM66BUPUMWOJCQM27AVY",
+      mnemonic:
+        "decline catalog moment lottery panther connect stand soap glare second police disagree height number asset combine scan certain room call runway decide question able hello",
+    };
+    const operations: IOperation[] = [
+      {
+        operation_id: "b96207d8-c6cb-46fa-8e0a-5ee4aead34fb",
+        operation_group: "e30eb5e9-4fd4-4352-98d1-ab9b8f610988",
+        operation_scenario: "TOP_UP_WITH_WALLETCONNECT",
+        algo_transaction_id: null,
+        algo_transaction:
+          "iqNhbXTOAA9CQKNmZWXNA+iiZnbOAYiU5qNnZW6sdGVzdG5ldC12MS4womdoxCBIY7UYpLPITsgQ8i1PEIHLD3HwWaesIN7GL39w5Qk6IqJsds4BiJjOomx4xCChPWHwwyByU2YFFwnI83OgOUpawVXGkI9jQbXxHNUWLaNyY3bEID1ZKCBgm4uPxpouem8Nczey/xzWuYvvP6b7IQRmsbSZo3NuZMQgRTYAfu96wQp8H8WhDxzhWeN7hkOhSw30rGokUEZYHJKkdHlwZaNwYXk=",
+        signed_algo_transaction: null,
+        type: "TRANSFER_ALGO_WALLETCONNECT",
+        is_walletconnect_operation: true,
+      },
+      {
+        operation_id: "e2647b46-befd-4202-b746-5d48cf824adc",
+        operation_group: "e30eb5e9-4fd4-4352-98d1-ab9b8f610988",
+        operation_scenario: "TOP_UP_WITH_WALLETCONNECT",
+        algo_transaction_id: null,
+        algo_transaction:
+          "i6RhYW10zgABhqCkYXJjdsQgUyw2TKZKsMrVPu2NsO4vSC9GfQWfSgV0LPeDR9GWckWjZmVlzQPoomZ2zgGIlOajZ2VurHRlc3RuZXQtdjEuMKJnaMQgSGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiKibHbOAYiYzqJseMQgCOamIzk/7PLJQZ3IdfYbLtlFkS21X1nBPgd2ICXRg22jc25kxCA9WSggYJuLj8aaLnpvDXM3sv8c1rmL7z+m+yEEZrG0maR0eXBlpWF4ZmVypHhhaWTOAOcfCA==",
+        signed_algo_transaction: null,
+        type: "TRANSFER_IBFX",
+        is_walletconnect_operation: false,
+      },
+    ];
+
     try {
-      const txnsToSign = await scenario(chain, address);
+      const params = await apiGetTxnParams(chain);
+      const txns: any[] = [];
+      const results: IOperation[] = [];
+      operations.forEach(op => {
+        const bytes = Uint8Array.from(Buffer.from(op.algo_transaction, "base64"));
+        const transaction = algosdk.decodeUnsignedTransaction(bytes);
+        transaction.firstRound = params.firstRound;
+        transaction.lastRound = params.lastRound;
+        op.transaction = transaction;
+        txns.push(op.transaction);
+      });
+      console.log(txns);
+      algosdk.assignGroupID(txns);
+      operations.forEach(op => {
+        op.algo_transaction = Buffer.from(
+          algosdk.encodeUnsignedTransaction(op.transaction as algosdk.Transaction),
+        ).toString("base64");
+        if (op.is_walletconnect_operation === false) {
+          const userKey = algosdk.mnemonicToSecretKey(account.mnemonic);
+          const signedTxn = algosdk.signTransaction(
+            op.transaction as algosdk.Transaction,
+            userKey.sk,
+          );
+          op.signed_txn = signedTxn.blob;
+          op.signed_algo_transaction = Buffer.from(signedTxn.blob).toString("base64");
+          op.algo_transaction_id = signedTxn.txID;
+          results.push(op);
+        }
+      });
+      const txnsToSign = await scenario(chain, address, operations);
 
       // open modal
       this.toggleModal();
@@ -340,9 +405,13 @@ class App extends React.Component<unknown, IAppState> {
       console.log(requestParams);
       const request = formatJsonRpcRequest("algo_signTxn", requestParams);
       console.log(request);
-      const result: Array<string | null> = await connector.sendCustomRequest(request);
+      const response: Array<string | null> = await connector.sendCustomRequest(request);
 
-      console.log("Raw response:", result);
+      console.log("Raw response:", response);
+      const result = response.filter(element => {
+        return element !== null;
+      });
+      console.log("Response:", result);
 
       const indexToGroup = (index: number) => {
         for (let group = 0; group < txnsToSign.length; group++) {
@@ -361,6 +430,9 @@ class App extends React.Component<unknown, IAppState> {
       result.forEach((r, i) => {
         const [group, groupIndex] = indexToGroup(i);
         const toSign = txnsToSign[group][groupIndex];
+        // const op = operations.find(operation => {
+        //   return operation.operation_id === toSign.operation_id;
+        // });
 
         if (r == null) {
           if (toSign.signers !== undefined && toSign.signers?.length < 1) {
@@ -373,8 +445,16 @@ class App extends React.Component<unknown, IAppState> {
         if (toSign.signers !== undefined && toSign.signers?.length < 1) {
           throw new Error(`Transaction at index ${i} was signed when it should not have been`);
         }
-
         const rawSignedTxn = Buffer.from(r, "base64");
+        console.log("rawSignedTxn", rawSignedTxn);
+        // if (op) {
+        //   const a = {
+        //     ...op,
+        //     signedTxn: algosdk.decodeSignedTransaction(rawSignedTxn),
+        //   };
+        //   console.log(a);
+        //   operations2.push(a);
+        // }
         signedPartialTxns[group].push(new Uint8Array(rawSignedTxn));
         console.log(signedPartialTxns);
       });
@@ -391,6 +471,12 @@ class App extends React.Component<unknown, IAppState> {
         },
       );
 
+      if (scenario.name === "testTxn") {
+        results.forEach(op => {
+          signedTxns.push(op.signed_txn);
+        });
+      }
+
       const signedTxnInfo: Array<Array<{
         txID: string;
         signingAddress?: string;
@@ -400,6 +486,9 @@ class App extends React.Component<unknown, IAppState> {
           if (rawSignedTxn == null) {
             return null;
           }
+          const op = operations.find(operation => {
+            return operation.operation_id === txnsToSign[group][i].operation_id;
+          });
           const signedEncoded = Buffer.from(rawSignedTxn).toString("base64");
           const signedTxn = algosdk.decodeSignedTransaction(rawSignedTxn);
           // signedOperation.algo_transaction_id = i
@@ -408,6 +497,7 @@ class App extends React.Component<unknown, IAppState> {
           console.log("signed tx:", signedTxn);
           const txn = (signedTxn.txn as unknown) as algosdk.Transaction;
           const txID = txn.txID();
+          console.log("txId:", txID);
           const unsignedTxID = txnsToSign[group][i].txn.txID();
 
           if (txID !== unsignedTxID) {
@@ -420,6 +510,13 @@ class App extends React.Component<unknown, IAppState> {
             throw new Error(`Signature not present on transaction at index ${i}`);
           }
 
+          if (op) {
+            op.algo_transaction_id = txID;
+            op.signed_algo_transaction = signedEncoded;
+            console.log("op:", op);
+            results.push(op);
+          }
+
           return {
             txID,
             signingAddress: signedTxn.sgnr ? algosdk.encodeAddress(signedTxn.sgnr) : undefined,
@@ -428,7 +525,19 @@ class App extends React.Component<unknown, IAppState> {
         });
       });
 
+      // operations.forEach(op => {
+      //   if (op.is_walletconnect_operation) {
+      //     const bytes = Uint8Array.from(Buffer.from(op.algo_transaction, "base64"));
+      //     const transaction = algosdk.decodeUnsignedTransaction(bytes);
+      //   }
+      // });
+      results.forEach(op => {
+        delete op.transaction;
+        delete op.signed_txn;
+      });
+
       console.log("Signed txn info:", signedTxnInfo);
+      console.log("formatted operations", JSON.stringify(results));
 
       // format displayed result
       const formattedResult: IResult = {
@@ -584,7 +693,7 @@ class App extends React.Component<unknown, IAppState> {
                 onClick={() => this.submitSignedTransaction()}
                 disabled={pendingSubmissions.length !== 0}
               >
-                {"Submit transaction to network."}
+                <STestButton>{"Submit transaction to network."}</STestButton>
               </SModalButton>
               {pendingSubmissions.map((submissionInfo, index) => {
                 const key = `${index}:${

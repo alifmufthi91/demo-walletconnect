@@ -1,3 +1,5 @@
+import algosdk from "algosdk";
+
 export interface IAssetData {
   id: number;
   amount: bigint;
@@ -7,6 +9,19 @@ export interface IAssetData {
   name?: string;
   unitName?: string;
   url?: string;
+}
+
+export interface IOperation {
+  operation_id: string;
+  operation_scenario: string;
+  operation_group: string;
+  algo_transaction: string;
+  algo_transaction_id: string|null;
+  signed_algo_transaction: string|null;
+  type?: string;
+  transaction?: algosdk.Transaction|null;
+  is_walletconnect_operation?: boolean;
+  signed_txn?: any;
 }
 
 export interface IChainData {

@@ -1,6 +1,8 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable quotes */
 import algosdk from "algosdk";
 import { apiGetTxnParams, ChainType } from "./helpers/api";
+import { IOperation } from "./helpers/types";
 
 const testAccounts = [
   algosdk.mnemonicToSecretKey(
@@ -31,11 +33,16 @@ export interface IScenarioTxn {
   signers?: string[];
   authAddr?: string;
   message?: string;
+  operation_id?: string;
 }
 
 export type ScenarioReturnType = IScenarioTxn[][];
 
-export type Scenario = (chain: ChainType, address: string) => Promise<ScenarioReturnType>;
+export type Scenario = (
+  chain: ChainType,
+  address: string,
+  operations: IOperation[],
+) => Promise<ScenarioReturnType>;
 
 function getAssetIndex(chain: ChainType): number {
   if (chain === ChainType.MainNet) {
@@ -115,10 +122,6 @@ const singleAssetOptInTxn: Scenario = async (
   });
 
   const txnsToSign = [
-    {
-      txn,
-      message: "This transaction opts you into the USDC asset if you have not already opted in.",
-    },
     {
       txn,
       message: "This transaction opts you into the USDC asset if you have not already opted in.",
@@ -256,83 +259,22 @@ const singleAppClearState: Scenario = async (
   return [txnsToSign];
 };
 
-const testTxn: Scenario = async (chain: ChainType): Promise<ScenarioReturnType> => {
-  const operations = [
-    {
-      operation_id: "354b0800-6960-11ed-bd09-9b173a48f256",
-      created_at: 1668152011453,
-      platform_key_id: null,
-      nft_id: "2bb25dc0-6960-11ed-bd09-9b173a48f256",
-      sell_escrow_id: null,
-      auction_id: null,
-      transaction_id: null,
-      loan_id: null,
-      operation_group: "35350f00-6960-11ed-a7c1-4f049b1e1397",
-      operation_scenario: "CREATE_ASA",
-      algo_transaction:
-        "iaNhbXTOAAGSWKNmZWXNA+iiZnbOAYgk3KNnZW6sdGVzdG5ldC12MS4womdoxCBIY7UYpLPITsgQ8i1PEIHLD3HwWaesIN7GL39w5Qk6IqJsds4BiCjEo3JjdsQgUyw2TKZKsMrVPu2NsO4vSC9GfQWfSgV0LPeDR9GWckWjc25kxCA9WSggYJuLj8aaLnpvDXM3sv8c1rmL7z+m+yEEZrG0maR0eXBlo3BheQ==",
-      json_algo_transaction:
-        '{"name":"Transaction","tag":"TX","from":"HVMSQIDATOFY7RU2FZ5G6DLTG6ZP6HGWXGF66P5G7MQQIZVRWSM5TAWHV4","to":"KMWDMTFGJKYMVVJ65WG3B3RPJAXUM7IFT5FAK5BM66BUPUMWOJCQM27AVY","amount":103000,"note":{},"type":"pay","flatFee":false,"genesisHash":"SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=","fee":1000,"firstRound":25699548,"lastRound":25700548,"genesisID":"testnet-v1.0","appArgs":[],"lease":{}}',
-      type: "TRANSFER_ALGO",
-      status: "INIT",
-      priority: -3,
-      is_admin_op: true,
-      is_platform_op: false,
-    },
-    {
-      operation_id: "354c6790-6960-11ed-bd09-9b173a48f256",
-      created_at: 1668152011453,
-      platform_key_id: null,
-      nft_id: "2bb25dc0-6960-11ed-bd09-9b173a48f256",
-      sell_escrow_id: null,
-      auction_id: null,
-      transaction_id: null,
-      loan_id: null,
-      operation_group: "35350f00-6960-11ed-a7c1-4f049b1e1397",
-      operation_scenario: "CREATE_ASA",
-      algo_transaction:
-        "iqRhYW10zgADDUCkYXJjdsQgPVkoIGCbi4/Gmi56bw1zN7L/HNa5i+8/pvshBGaxtJmjZmVlzQPoomZ2zgGIJNyjZ2VurHRlc3RuZXQtdjEuMKJnaMQgSGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiKibHbOAYgoxKNzbmTEIFMsNkymSrDK1T7tjbDuL0gvRn0Fn0oFdCz3g0fRlnJFpHR5cGWlYXhmZXKkeGFpZM4A5x8I",
-      json_algo_transaction:
-        '{"name":"Transaction","tag":"TX","type":"axfer","from":"KMWDMTFGJKYMVVJ65WG3B3RPJAXUM7IFT5FAK5BM66BUPUMWOJCQM27AVY","to":"HVMSQIDATOFY7RU2FZ5G6DLTG6ZP6HGWXGF66P5G7MQQIZVRWSM5TAWHV4","amount":200000,"assetIndex":15146760,"note":{},"flatFee":false,"genesisHash":"SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=","fee":1000,"firstRound":25699548,"lastRound":25700548,"genesisID":"testnet-v1.0","appArgs":[],"lease":{}}',
-      type: "PAY_FEE_IBFX1",
-      status: "INIT",
-      priority: 1,
-      is_admin_op: false,
-      is_platform_op: false,
-      is_escrow_op: false,
-    },
-    {
-      operation_id: "354d7900-6960-11ed-bd09-9b173a48f256",
-      created_at: 1668152011453,
-      platform_key_id: null,
-      nft_id: "2bb25dc0-6960-11ed-bd09-9b173a48f256",
-      sell_escrow_id: null,
-      auction_id: null,
-      transaction_id: null,
-      loan_id: null,
-      operation_group: "35350f00-6960-11ed-a7c1-4f049b1e1397",
-      operation_scenario: "CREATE_ASA",
-      algo_transaction:
-        "iKRhcGFyg6JhbqZSQUJCQViiYXXZNWlwZnM6Ly9RbVd4NVBkajhxNE1WZ0NMMnVYRzRuVFZvVndGYjFWYWNvOEFxUllOZ3dVWVBMoXQFo2ZlZc0D6KJmds4BiCTco2dlbqx0ZXN0bmV0LXYxLjCiZ2jEIEhjtRiks8hOyBDyLU8QgcsPcfBZp6wg3sYvf3DlCToiomx2zgGIKMSjc25kxCBTLDZMpkqwytU+7Y2w7i9IL0Z9BZ9KBXQs94NH0ZZyRaR0eXBlpGFjZmc=",
-      json_algo_transaction:
-        '{"name":"Transaction","tag":"TX","from":"KMWDMTFGJKYMVVJ65WG3B3RPJAXUM7IFT5FAK5BM66BUPUMWOJCQM27AVY","note":{},"assetTotal":5,"assetDecimals":0,"assetDefaultFrozen":false,"assetName":"RABBAX","assetURL":"ipfs://QmWx5Pdj8q4MVgCL2uXG4nTVoVwFb1Vaco8AqRYNgwUYPL","type":"acfg","flatFee":false,"genesisHash":"SGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiI=","fee":1000,"firstRound":25699548,"lastRound":25700548,"genesisID":"testnet-v1.0","appArgs":[],"lease":{}}',
-      type: "CREATE_ASSET",
-      status: "INIT",
-      signer_type: "WALLET_CONNECT",
-      priority: 4,
-      is_admin_op: false,
-      is_platform_op: false,
-      is_escrow_op: false,
-    },
-  ];
+const testTxn: Scenario = async (
+  chain: ChainType,
+  address: string,
+  operations: IOperation[],
+): Promise<ScenarioReturnType> => {
   const suggestedParams = await apiGetTxnParams(chain);
   const txns = [];
   for (const operation of operations) {
+    // if (!operation.is_walletconnect_operation) {
+    //   continue;
+    // }
     const bytes = Uint8Array.from(Buffer.from(operation.algo_transaction, "base64"));
     const transaction = algosdk.decodeUnsignedTransaction(bytes);
     transaction.firstRound = suggestedParams.firstRound;
     transaction.lastRound = suggestedParams.lastRound;
-    txns.push({ txn: transaction, message: "test" });
+    txns.push({ txn: transaction, message: "test", operation_id: operation.operation_id });
   }
   return [txns];
 };
@@ -371,7 +313,7 @@ export const scenarios: Array<{ name: string; scenario: Scenario }> = [
     scenario: singleAppClearState,
   },
   {
-    name: "test credence txn",
+    name: "test Top Up IBFx txn",
     scenario: testTxn,
   },
 ];

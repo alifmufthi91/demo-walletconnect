@@ -322,23 +322,23 @@ class App extends React.Component<unknown, IAppState> {
     };
     const operations: IOperation[] = [
       {
-        operation_id: "b96207d8-c6cb-46fa-8e0a-5ee4aead34fb",
-        operation_group: "e30eb5e9-4fd4-4352-98d1-ab9b8f610988",
+        operation_id: "1050a11a-65f8-4d33-b1ee-d254a13e6046",
+        operation_group: "7450ce65-913b-4782-867b-59039f5c3f14",
         operation_scenario: "TOP_UP_WITH_WALLETCONNECT",
         algo_transaction_id: null,
         algo_transaction:
-          "iqNhbXTOAA9CQKNmZWXNA+iiZnbOAYiU5qNnZW6sdGVzdG5ldC12MS4womdoxCBIY7UYpLPITsgQ8i1PEIHLD3HwWaesIN7GL39w5Qk6IqJsds4BiJjOomx4xCChPWHwwyByU2YFFwnI83OgOUpawVXGkI9jQbXxHNUWLaNyY3bEID1ZKCBgm4uPxpouem8Nczey/xzWuYvvP6b7IQRmsbSZo3NuZMQgRTYAfu96wQp8H8WhDxzhWeN7hkOhSw30rGokUEZYHJKkdHlwZaNwYXk=",
+          "iqNhbXTOAD+hEKNmZWXNA+iiZnbOAYmhhKNnZW6sdGVzdG5ldC12MS4womdoxCBIY7UYpLPITsgQ8i1PEIHLD3HwWaesIN7GL39w5Qk6IqJsds4BiaVsomx4xCAnRTW86SvrSbILZW5OoSxe9SxoU2mCchVwGhrk0Hi34KNyY3bEID1ZKCBgm4uPxpouem8Nczey/xzWuYvvP6b7IQRmsbSZo3NuZMQgRTYAfu96wQp8H8WhDxzhWeN7hkOhSw30rGokUEZYHJKkdHlwZaNwYXk=",
         signed_algo_transaction: null,
         type: "TRANSFER_ALGO_WALLETCONNECT",
         is_walletconnect_operation: true,
       },
       {
-        operation_id: "e2647b46-befd-4202-b746-5d48cf824adc",
-        operation_group: "e30eb5e9-4fd4-4352-98d1-ab9b8f610988",
+        operation_id: "772f5f03-98fc-41a4-9b83-2ced9cbc3583",
+        operation_group: "7450ce65-913b-4782-867b-59039f5c3f14",
         operation_scenario: "TOP_UP_WITH_WALLETCONNECT",
         algo_transaction_id: null,
         algo_transaction:
-          "i6RhYW10zgABhqCkYXJjdsQgUyw2TKZKsMrVPu2NsO4vSC9GfQWfSgV0LPeDR9GWckWjZmVlzQPoomZ2zgGIlOajZ2VurHRlc3RuZXQtdjEuMKJnaMQgSGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiKibHbOAYiYzqJseMQgCOamIzk/7PLJQZ3IdfYbLtlFkS21X1nBPgd2ICXRg22jc25kxCA9WSggYJuLj8aaLnpvDXM3sv8c1rmL7z+m+yEEZrG0maR0eXBlpWF4ZmVypHhhaWTOAOcfCA==",
+          "i6RhYW10zgAPQkCkYXJjdsQgUyw2TKZKsMrVPu2NsO4vSC9GfQWfSgV0LPeDR9GWckWjZmVlzQPoomZ2zgGJoYSjZ2VurHRlc3RuZXQtdjEuMKJnaMQgSGO1GKSzyE7IEPItTxCByw9x8FmnrCDexi9/cOUJOiKibHbOAYmlbKJseMQgRDBmYPpOFK/DCbnqCm8O4MaAqk1YIvO5fCgpTTXaD0Sjc25kxCA9WSggYJuLj8aaLnpvDXM3sv8c1rmL7z+m+yEEZrG0maR0eXBlpWF4ZmVypHhhaWTOAOcfCA==",
         signed_algo_transaction: null,
         type: "TRANSFER_IBFX",
         is_walletconnect_operation: false,
@@ -692,8 +692,14 @@ class App extends React.Component<unknown, IAppState> {
               <SModalButton
                 onClick={() => this.submitSignedTransaction()}
                 disabled={pendingSubmissions.length !== 0}
+                style={{
+                  color: "red",
+                  backgroundColor: "lightblue",
+                  border: "5px",
+                  padding: "10px",
+                }}
               >
-                <STestButton>{"Submit transaction to network."}</STestButton>
+                {"Submit transaction to network."}
               </SModalButton>
               {pendingSubmissions.map((submissionInfo, index) => {
                 const key = `${index}:${

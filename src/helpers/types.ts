@@ -13,15 +13,20 @@ export interface IAssetData {
 
 export interface IOperation {
   operation_id: string;
-  operation_scenario: string;
-  operation_group: string;
+  operation_scenario?: string;
+  operation_group?: string;
   algo_transaction: string;
   algo_transaction_id: string|null;
   signed_algo_transaction: string|null;
   type?: string;
-  transaction?: algosdk.Transaction|null;
+  txn?: algosdk.Transaction|null;
+  transaction? : any;
   is_walletconnect_operation?: boolean;
   signed_txn?: any;
+  user?: any;
+  status?: any;
+  created_at?: number|null;
+  updated_at?: number|null;
 }
 
 export interface IChainData {
